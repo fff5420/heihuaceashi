@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TA吃醋黑化测试 · 测测你的对象黑化后是什么类型</title>
+<style>
+  :root{
+    --pink:#ff5f8f;
+    --purple:#8b5cf6;
+    --ink:#241f36;
+    --ink2:#6b6480;
+    --ink3:#9a94ad;
+    --line:#efeaf8;
+    --card:#ffffff;
+    --rc:#ff5f8f;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(900px 520px at 8% -8%, #ffe4ee 0%, rgba(255,228,238,0) 62%),
+      radial-gradient(820px 520px at 102% 2%, #e7e0ff 0%, rgba(231,224,255,0) 58%),
+      linear-gradient(168deg,#fff9fc 0%,#f6f3ff 46%,#f1f8ff 100%);
+    background-attachment:fixed;
+    display:flex;
+    justify-content:center;
+    padding:30px 16px 70px;
+  }
+  .deco{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+  .deco i{position:absolute;font-style:normal;opacity:.42;animation:float 13s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-22px) rotate(9deg)}}
+
+  .app{position:relative;z-index:1;width:100%;max-width:730px}
+
+  .card{
+    background:var(--card);
+    border-radius:28px;
+    padding:38px 34px 34px;
+    border:1px solid rgba(255,255,255,.9);
+    box-shadow:0 22px 56px -22px rgba(103,80,164,.30), 0 2px 10px rgba(103,80,164,.06);
+  }
+
+  .screen{display:none}
+  .screen.active{display:block;animation:fadeUp .5s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+
+  /* ---------- 首页 ---------- */
+  .hero{text-align:center}
+  .hero .big{font-size:60px;line-height:1;margin-bottom:14px;display:block;animation:float 5s ease-in-out infinite}
+  .badge{
+    display:inline-block;font-size:12px;letter-spacing:.14em;font-weight:700;
+    color:#b4638d;background:linear-gradient(100deg,#ffe6f0,#f0e8ff);
+    padding:6px 14px;border-radius:999px;margin-bottom:16px;
+  }
+  h1{
+    font-size:clamp(25px,5.4vw,34px);line-height:1.28;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;
+    background:linear-gradient(100deg,#ff5f8f 0%,#a855f7 58%,#6366f1 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .lede{color:var(--ink2);font-size:15.5px;line-height:1.85;margin:0 auto 26px;max-width:460px}
+  .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 28px}
+  .fact{background:linear-gradient(165deg,#fdf7ff,#f5f2ff);border:1px solid var(--line);border-radius:16px;padding:14px 8px}
+  .fact b{display:block;font-size:19px;color:#7c4ddb;font-weight:800}
+  .fact span{font-size:12px;color:var(--ink3)}
+
+  .btn{
+    appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:700;
+    border-radius:999px;transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .btn:active{transform:scale(.975)}
+  .btn-primary{
+    display:block;width:100%;padding:17px 20px;font-size:16.5px;color:#fff;letter-spacing:.04em;
+    background:linear-gradient(100deg,#ff6b9d,#c86bff 55%,#7c6bff);
+    box-shadow:0 14px 30px -12px rgba(200,80,190,.72);
+  }
+  .btn-primary:hover{box-shadow:0 18px 36px -12px rgba(200,80,190,.85);transform:translateY(-2px)}
+  .btn-ghost{
+    padding:13px 22px;font-size:14.5px;color:#6c5a94;background:#f6f3ff;border:1px solid #e8e2fa;
+  }
+  .btn-ghost:hover{background:#efeaff}
+  .foot-note{margin-top:16px;font-size:12.5px;color:var(--ink3);text-align:center;line-height:1.7}
+
+  /* ---------- 答题页 ---------- */
+  .qtop{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+  .qcount{font-size:13px;font-weight:800;color:#8a76c9;white-space:nowrap;letter-spacing:.06em}
+  .qcount em{font-style:normal;font-size:18px;color:#6a3fd6}
+  .bar{flex:1;height:7px;border-radius:99px;background:#f0ecfa;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#ff8ab5,#c86bff);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+
+  .qtext{font-size:clamp(18px,3.6vw,21px);line-height:1.62;font-weight:800;margin:0 0 24px;letter-spacing:-.005em}
+  .qtext::before{content:"Q";display:inline-block;font-size:14px;color:#fff;background:linear-gradient(140deg,#ff7aa8,#a855f7);
+    width:24px;height:24px;line-height:24px;text-align:center;border-radius:8px;margin-right:10px;vertical-align:2px;font-weight:800}
+
+  .opts{display:flex;flex-direction:column;gap:11px}
+  .opt{
+    display:flex;align-items:flex-start;gap:13px;width:100%;text-align:left;cursor:pointer;
+    font-family:inherit;font-size:15px;line-height:1.62;color:#332c48;
+    background:#fbfaff;border:1.5px solid #eee9f9;border-radius:17px;
+    padding:15px 17px;transition:all .2s ease;animation:popIn .4s ease both;
+  }
+  .opt:hover{border-color:#e0b6f7;background:#fdf6ff;transform:translateY(-2px);box-shadow:0 10px 24px -16px rgba(140,80,220,.7)}
+  .opt .tag{
+    flex:none;width:24px;height:24px;border-radius:8px;font-style:normal;font-weight:800;font-size:12.5px;
+    display:flex;align-items:center;justify-content:center;color:#8b74d1;background:#f0eaff;transition:all .2s ease;
+  }
+  .opt.sel{
+    border-color:#c86bff;background:linear-gradient(100deg,#fff1f8,#f6efff);
+    box-shadow:0 12px 26px -16px rgba(190,90,230,.8);
+  }
+  .opt.sel .tag{background:linear-gradient(140deg,#ff6b9d,#a855f7);color:#fff}
+
+  .qback{margin-top:20px;display:flex;justify-content:flex-start}
+
+  /* ---------- 结果页 ---------- */
+  .res-hero{
+    border-radius:24px;padding:28px 22px 24px;text-align:center;margin-bottom:22px;
+    background:linear-gradient(165deg, rgba(255,255,255,.6), rgba(255,255,255,.2)), #faf7ff;
+    border:1px solid var(--line);position:relative;overflow:hidden;
+  }
+  .res-hero::after{
+    content:"";position:absolute;inset:-40% -10% auto;height:150px;
+    background:radial-gradient(60% 100% at 50% 0%, var(--rc), transparent 72%);opacity:.20;
+  }
+  .res-emoji{font-size:54px;line-height:1;display:block;margin-bottom:12px;filter:drop-shadow(0 8px 14px rgba(140,90,200,.28))}
+  .res-label{font-size:12px;letter-spacing:.2em;color:var(--ink3);font-weight:700;margin-bottom:8px}
+  .res-name{font-size:clamp(23px,4.8vw,29px);font-weight:800;margin:0 0 8px;color:var(--ink);letter-spacing:-.01em}
+  .res-code{display:inline-block;font-size:13px;font-weight:700;color:#fff;padding:5px 14px;border-radius:999px;
+    background:var(--rc);box-shadow:0 8px 18px -10px var(--rc)}
+  .res-danger{margin-top:14px;font-size:14px;color:#f59e0b;letter-spacing:3px}
+  .res-danger small{display:block;color:var(--ink3);letter-spacing:.06em;font-size:11.5px;margin-top:6px}
+
+  .idx-wrap{display:flex;align-items:center;gap:22px;margin-bottom:22px;flex-wrap:wrap}
+  .ring-box{position:relative;width:124px;height:124px;flex:none}
+  .ring{width:124px;height:124px;display:block}
+  .ring-bg{fill:none;stroke:#f0ecfa;stroke-width:11}
+  .ring-fg{fill:none;stroke:var(--rc);stroke-width:11;stroke-linecap:round;
+    stroke-dasharray:326.7;stroke-dashoffset:326.7;
+    transform:rotate(-90deg);transform-origin:50% 50%;
+    transition:stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1)}
+  .ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-txt b{font-size:30px;font-weight:800;color:var(--ink);line-height:1}
+  .ring-txt b i{font-size:14px;font-style:normal;font-weight:700;color:var(--ink3)}
+  .ring-txt span{font-size:11px;color:var(--ink3);margin-top:4px;letter-spacing:.08em}
+  .idx-meta{flex:1;min-width:190px}
+  .idx-meta .tagline{font-size:17px;font-weight:800;color:#7c3aed;margin-bottom:8px}
+  .idx-meta p{margin:0;font-size:13.5px;color:var(--ink2);line-height:1.75}
+
+  .quote{
+    border-left:3px solid var(--rc);background:linear-gradient(100deg,#fbf8ff,#fff);
+    padding:15px 18px;border-radius:0 16px 16px 0;margin-bottom:22px;
+    font-size:15px;line-height:1.7;color:#453a63;font-weight:600;
+  }
+  .quote span{display:block;font-size:11.5px;color:var(--ink3);font-weight:700;letter-spacing:.12em;margin-bottom:7px}
+
+  .res-desc{font-size:15px;line-height:1.9;color:#463c60;margin:0 0 24px}
+
+  .block{margin-bottom:24px}
+  .block h3{font-size:14px;font-weight:800;color:#6a3fd6;margin:0 0 13px;letter-spacing:.05em;
+    display:flex;align-items:center;gap:8px}
+  .block h3::before{content:"";width:4px;height:15px;border-radius:3px;background:linear-gradient(180deg,#ff7aa8,#a855f7)}
+  .traits{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .traits li{position:relative;padding:12px 15px 12px 40px;font-size:14px;line-height:1.65;color:#4a4066;
+    background:#fbfaff;border:1px solid #f1ecfb;border-radius:14px}
+  .traits li::before{content:"✦";position:absolute;left:15px;top:11px;color:var(--rc);font-size:13px}
+  .guide{font-size:14.5px;line-height:1.9;color:#4a4066;background:linear-gradient(100deg,#fdf7ff,#f7f9ff);
+    border:1px dashed #e4d8fb;border-radius:16px;padding:16px 18px;margin:0}
+
+  .dims{display:flex;flex-direction:column;gap:12px}
+  .dim{display:flex;align-items:center;gap:12px;font-size:13px}
+  .dim .dn{width:78px;flex:none;color:var(--ink2);font-weight:600}
+  .dim .dt{flex:1;height:9px;border-radius:99px;background:#f3f0fb;overflow:hidden}
+  .dim .dt i{display:block;height:100%;width:0;border-radius:99px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+  .dim .dv{width:40px;flex:none;text-align:right;font-weight:800;color:#8b7fb0;font-size:12px}
+
+  .subtype{font-size:14.5px;line-height:1.85;color:#4a4066;margin:0;
+    background:linear-gradient(100deg,#f8f6ff,#f6fbff);border:1px solid var(--line);border-radius:16px;padding:15px 17px}
+  .subtype b{color:#7c3aed}
+
+  .actions{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+  .actions .btn-primary{flex:1;min-width:180px}
+
+  .toast{
+    position:fixed;left:50%;bottom:34px;transform:translate(-50%,16px);
+    background:rgba(36,31,54,.94);color:#fff;font-size:13.5px;font-weight:600;
+    padding:12px 22px;border-radius:999px;opacity:0;pointer-events:none;transition:all .3s ease;z-index:99;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:560px){
+    .card{padding:28px 20px 26px;border-radius:24px}
+    body{padding:18px 12px 56px}
+    .facts{grid-template-columns:repeat(3,1fr);gap:8px}
+    .fact b{font-size:16px}
+    .opt{font-size:14.3px;padding:14px 15px}
+    .dim .dn{width:66px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="deco" aria-hidden="true">
+  <i style="left:6%;top:12%;font-size:26px;animation-delay:0s">💔</i>
+  <i style="left:88%;top:8%;font-size:30px;animation-delay:1.4s">🌨️</i>
+  <i style="left:80%;top:62%;font-size:24px;animation-delay:2.6s">🔍</i>
+  <i style="left:9%;top:72%;font-size:28px;animation-delay:3.4s">🌋</i>
+  <i style="left:48%;top:90%;font-size:22px;animation-delay:4.2s">🫠</i>
+  <i style="left:30%;top:4%;font-size:20px;animation-delay:5s">💧</i>
+</div>
+
+<div class="app">
+  <div class="card">
+
+    <!-- ============ 首页 ============ -->
+    <section class="screen active" id="screen-intro">
+      <div class="hero">
+        <span class="big">🫣</span>
+        <div class="badge">趣味心理测验 · 仅供娱乐</div>
+        <h1>TA 吃醋黑化测试</h1>
+        <p class="lede">醋坛子翻倒的那一刻，TA 会变成什么样子？<br>12 道情境题，凭第一直觉作答，测出你家那位黑化后的真实类型。</p>
+        <div class="facts">
+          <div class="fact"><b>12</b><span>道情境题</span></div>
+          <div class="fact"><b>6</b><span>种黑化型格</span></div>
+          <div class="fact"><b>90s</b><span>出结果</span></div>
+        </div>
+        <button class="btn btn-primary" id="startBtn">开始测试 →</button>
+        <p class="foot-note">别纠结太久，第一反应往往最准 ✨</p>
+      </div>
+    </section>
+
+    <!-- ============ 答题页 ============ -->
+    <section class="screen" id="screen-quiz">
+      <div class="qtop">
+        <div class="qcount"><em id="qIdx">1</em> / 12</div>
+        <div class="bar"><i id="qBar"></i></div>
+      </div>
+      <h2 class="qtext" id="qText"></h2>
+      <div class="opts" id="opts"></div>
+      <div class="qback">
+        <button class="btn btn-ghost" id="backBtn">← 上一题</button>
+      </div>
+    </section>
+
+    <!-- ============ 结果页 ============ -->
+    <section class="screen" id="screen-result">
+      <div class="res-hero">
+        <span class="res-emoji" id="resEmoji">🧊</span>
+        <div class="res-label">你的 TA 黑化类型是</div>
+        <h2 class="res-name" id="resName"></h2>
+        <div class="res-code" id="resCode"></div>
+        <div class="res-danger" id="resDanger"></div>
+      </div>
+
+      <div class="idx-wrap">
+        <div class="ring-box">
+          <svg class="ring" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+            <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div class="ring-txt">
+            <b><span id="idxNum">0</span><i>%</i></b>
+            <span>黑化指数</span>
+          </div>
+        </div>
+        <div class="idx-meta">
+          <div class="tagline" id="idxTag"></div>
+          <p id="idxDesc"></p>
+        </div>
+      </div>
+
+      <p class="res-desc" id="resDesc"></p>
+
+      <div class="quote" id="resQuote">
+        <span>黑化名场面台词</span>
+        <div id="resLine"></div>
+      </div>
+
+      <div class="block">
+        <h3>黑化特征</h3>
+        <ul class="traits" id="resTraits"></ul>
+      </div>
+
+      <div class="block">
+        <h3>拆弹指南 · 怎么哄</h3>
+        <p class="guide" id="resGuide"></p>
+      </div>
+
+      <div class="block">
+        <h3>六维黑化图谱</h3>
+        <div class="dims" id="dims"></div>
+      </div>
+
+      <div class="block">
+        <h3>隐藏副类型</h3>
+        <p class="subtype" id="subType"></p>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="againBtn">再测一次</button>
+        <button class="btn btn-ghost" id="copyBtn">复制我的结果</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+/* ============ 题库数据 ============ */
+const QUESTIONS = [
+  {
+    q: "深夜，你的手机屏幕突然亮了一下，TA 的反应是——",
+    opts: [
+      { t: "装作没看见，只是翻身的动作有点大", s: { ice: 3, pit: 1 } },
+      { t: "顺口问了句“这么晚谁啊”，眼角扫了一下屏幕", s: { det: 2, vol: 1 } },
+      { t: "“哟，聊得挺欢啊，继续继续，当我不存在就好～”", s: { snk: 3 } },
+      { t: "把脑袋埋进你怀里：“别看手机了，看我。”", s: { clg: 3 } }
+    ]
+  },
+  {
+    q: "聚会上，有人很热情地给你夹了菜，TA——",
+    opts: [
+      { t: "面无表情地把那盘菜往旁边推了推", s: { ice: 2, snk: 1 } },
+      { t: "“哎呀我们家 XX 饭量可小了，吃不下了～”", s: { snk: 2, clg: 1 } },
+      { t: "立刻也夹一筷子给你，速度比谁都快", s: { vol: 1, clg: 2 } },
+      { t: "低头戳饭粒，小声说“我做的饭你是不是早吃腻了”", s: { pit: 3 } }
+    ]
+  },
+  {
+    q: "TA 无意中发现你相册里还留着前任的照片（你只是忘了删）——",
+    opts: [
+      { t: "一句话不说，接下来好几天话都少得可怜", s: { ice: 3 } },
+      { t: "默默把时间地点研究一遍，顺手搜了下那个人的账号", s: { det: 3 } },
+      { t: "“留着挺好的，念旧的人有福气，我又不是不讲道理的人。”", s: { snk: 3 } },
+      { t: "“你是不是……还想着TA？”说完眼圈就红了", s: { pit: 2, vol: 1 } }
+    ]
+  },
+  {
+    q: "TA 吃醋的时候，最常用的表达方式是——",
+    opts: [
+      { t: "沉默，用一句“没事”回答你所有问题", s: { ice: 3 } },
+      { t: "翻聊天记录、朋友圈、点赞列表，什么都要看一眼", s: { det: 3 } },
+      { t: "阴阳怪气，每句话末尾都带个“呵呵”", s: { snk: 3 } },
+      { t: "有话直说，当场对质，音量随情绪上涨", s: { vol: 3 } }
+    ]
+  },
+  {
+    q: "TA 吃醋之后，你最可能收到——",
+    opts: [
+      { t: "一整晚的已读不回", s: { ice: 2, snk: 1 } },
+      { t: "一串连珠炮：“在哪？和谁？几点回？”", s: { det: 3 } },
+      { t: "一条“没事，你去玩吧，我一个人也挺好的”", s: { snk: 2, pit: 1 } },
+      { t: "十几个未接来电，和一句“你到底什么意思”", s: { vol: 3 } }
+    ]
+  },
+  {
+    q: "你觉得 TA 最害怕的事情是——",
+    opts: [
+      { t: "你突然不理TA、冷着TA", s: { clg: 2, pit: 1 } },
+      { t: "你身边出现了更耀眼、更懂你的人", s: { pit: 2, vol: 1 } },
+      { t: "你什么都瞒着TA，什么都靠猜", s: { det: 2, ice: 1 } },
+      { t: "你云淡风轻地笑着说“随便你吧”", s: { ice: 2, pit: 1 } }
+    ]
+  },
+  {
+    q: "吃醋时，TA 更倾向于——",
+    opts: [
+      { t: "一个人待到情绪自己过去，谁也别理", s: { ice: 3 } },
+      { t: "反复确认你的行程、社交圈和最近聊过的人", s: { det: 3 } },
+      { t: "突然变得特别黏，走哪跟哪，一秒都不松手", s: { clg: 3 } },
+      { t: "用行动“惩罚”你，比如故意不回消息让你干着急", s: { ice: 2, snk: 1 } }
+    ]
+  },
+  {
+    q: "你随口夸了别人的对象一句，TA——",
+    opts: [
+      { t: "淡淡来一句“那你去找TA啊”", s: { snk: 2, ice: 1 } },
+      { t: "立刻开始列举自己的十八个优点，声音越来越响", s: { vol: 2, clg: 1 } },
+      { t: "“我是不是……不够好？”", s: { pit: 3 } },
+      { t: "开始不动声色地打听那个“别人”到底是谁", s: { det: 3 } }
+    ]
+  },
+  {
+    q: "TA 吃醋后的“和解方式”通常是——",
+    opts: [
+      { t: "等你自己发现，然后主动来道歉", s: { ice: 3 } },
+      { t: "要求你把相关的人删掉、拉远，最好再保证一次", s: { vol: 2, det: 1 } },
+      { t: "忽然变得超级温柔，默默做一桌你爱吃的菜", s: { clg: 2, pit: 1 } },
+      { t: "讲一整晚的玩笑话，句句都精准带刺", s: { snk: 3 } }
+    ]
+  },
+  {
+    q: "如果你故意逗 TA 吃醋，TA 会——",
+    opts: [
+      { t: "全程面无表情，早就看穿了你在演", s: { ice: 2, det: 1 } },
+      { t: "配合你演下去，最后反将你一军", s: { snk: 2, det: 1 } },
+      { t: "真的急了，音量当场提高八度", s: { vol: 3 } },
+      { t: "当认真了，眼眶慢慢湿润", s: { pit: 3 } }
+    ]
+  },
+  {
+    q: "TA 手机里关于你的痕迹，更可能是——",
+    opts: [
+      { t: "一个完全看不出情侣关系的神秘备注", s: { ice: 2, det: 1 } },
+      { t: "你的行程、纪念日、爱吃的菜，全被记在备忘录", s: { det: 2, clg: 1 } },
+      { t: "一百张你的丑照，随时准备拿出来“威胁”你", s: { snk: 2, clg: 1 } },
+      { t: "置顶聊天 ＋ 特关提示音，消息一秒接起", s: { vol: 1, clg: 2 } }
+    ]
+  },
+  {
+    q: "最后，你希望 TA 黑化后是——",
+    opts: [
+      { t: "冷静克制，最好让你完全察觉不到", s: { ice: 2, det: 1 } },
+      { t: "有话直说，痛痛快快吵完就翻篇", s: { vol: 3 } },
+      { t: "撒娇黏人，用爱把你牢牢锁住", s: { clg: 3 } },
+      { t: "表面大度，心里其实早已翻江倒海", s: { snk: 2, pit: 1 } }
+    ]
+  }
+];
+
+/* ============ 维度与结果定义 ============ */
+const DIM_KEYS = ['ice', 'det', 'snk', 'vol', 'clg', 'pit'];
+const DIM_NAMES = {
+  ice: '冰山沉默', det: '侦查取证', snk: '阴阳话术',
+  vol: '火山爆发', clg: '黏人锁定', pit: '委屈眼泪'
+};
+const DIM_COLORS = {
+  ice: '#5b8def', det: '#f59e0b', snk: '#a855f7',
+  vol: '#ef4444', clg: '#ec4899', pit: '#14b8a6'
+};
+
+const RESULTS = {
+  ice: {
+    name: '冰山·沉默型',
+    code: '代号「南极圈」',
+    emoji: '🧊',
+    color: '#5b8def',
+    danger: 4,
+    desc: 'TA 的醋意从来不说出口，只会一点点结冰。你没察觉，但屋里的空气已经降到零下。TA 把沉默当武器，等你先低头——而 TA 等的从来不是解释，是你先伸手。',
+    line: '“我没生气。真的。你自己玩吧。”',
+    traits: [
+      '话少得可怕，回复只剩“嗯”“哦”“随便”',
+      '不吵不闹，但你能明显感觉到那片冷空气',
+      '越在意越沉默，就等你主动破冰'
+    ],
+    guide: '别装傻，也别硬扛冷战。TA 不是懒得说话，是在等你先开口。一句“是不是我刚才让你不开心了，我错了”基本能解决八成问题。'
+  },
+  det: {
+    name: '侦探·侦查型',
+    code: '代号「福尔摩斯本人」',
+    emoji: '🔍',
+    color: '#f59e0b',
+    danger: 5,
+    desc: '一张照片能推出时间地点人物，一个点赞能画出你的社交地图。TA 不吃醋则已，一吃醋就是立案侦查级别的信息收集。安全感对 TA 而言，是可以用信息量堆出来的。',
+    line: '“你昨天 17:42 发的那条动态，定位在XX，那个人离你不到 800 米。”',
+    traits: [
+      '翻记录、查动态、对时间线，逻辑清晰得吓人',
+      '嘴上说“我就随口问问”，其实全都默默记下',
+      '你越透明，TA 越安心'
+    ],
+    guide: '隐瞒对 TA 来说成本极高——你藏一件事，TA 会挖出十件。与其被查，不如主动“汇报”，把查岗变成分享，TA 反而会越来越放松。'
+  },
+  snk: {
+    name: '阴阳·话术型',
+    code: '代号「带刺玫瑰」',
+    emoji: '🌹',
+    color: '#a855f7',
+    danger: 3,
+    desc: 'TA 从不说重话，但每一句都像包着糖的针。“没事”“随便”“你开心就好”——翻译过来全是醋。TA 的情绪藏在一层薄薄的客气底下，等你听懂。',
+    line: '“你忙你的，我很好呀，真的，一点事都没有呢。”',
+    traits: [
+      '阴阳大师，反话十级选手',
+      '嘴上大度，心里早就翻江倒海',
+      '不直说，等你自己领悟潜台词'
+    ],
+    guide: '听见“没事”就往“有事”上理解，绝不会错。别跟 TA 打太极绕圈子，直接把话挑明、直接道歉，TA 反而会立刻软下来。'
+  },
+  vol: {
+    name: '火山·爆发型',
+    code: '代号「临界岩浆」',
+    emoji: '🌋',
+    color: '#ef4444',
+    danger: 4,
+    desc: '情绪直来直去，醋意上头的瞬间直接点燃，气势能掀翻天花板。但好消息是——TA 炸得快，也消得快，从不记仇，吵完就翻篇。',
+    line: '“你把手机拿出来，我们当面说清楚！”',
+    traits: [
+      '来势汹汹，音量随情绪一路飘红',
+      '当场就要答案，绝不接受拖延战术',
+      '嘴上凶巴巴，转头又心疼你'
+    ],
+    guide: '千万别在 TA 情绪顶点讲道理。先给一个拥抱或一句“我错了”，等火下去了再慢慢复盘，效果能好十倍。'
+  },
+  clg: {
+    name: '黏人·锁定型',
+    code: '代号「人形挂件」',
+    emoji: '🫂',
+    color: '#ec4899',
+    danger: 3,
+    desc: 'TA 的醋意表现为物理级别的黏连——牵手、贴贴、跟着你走，一秒钟都不想离开视线范围。爱得直白，占有欲也直白，可爱得让人没法生气。',
+    line: '“你去哪儿我都跟着，不行吗？”',
+    traits: [
+      '吃醋的方式＝变成你的肩挂件',
+      '真正怕的不是别人，是你不够在乎',
+      '肢体接触是 TA 的安全感来源'
+    ],
+    guide: '别推开，也别不耐烦。多给一点确认和身体接触，一句“我就喜欢你粘着我”能让 TA 瞬间满血复活。'
+  },
+  pit: {
+    name: '委屈·眼泪型',
+    code: '代号「委屈巴巴」',
+    emoji: '🥺',
+    color: '#14b8a6',
+    danger: 2,
+    desc: 'TA 的黑化是从眼眶泛红开始的。不闹，不吵，只是默默缩成一团，让你瞬间失了脾气、心都揪起来。攻击性几乎为零，杀伤力却拉满。',
+    line: '“我是不是……配不上你啊？”',
+    traits: [
+      '一秒钟眼眶红，攻击性为零',
+      '把所有不安都怪到自己头上',
+      '需要的只是被明确地选择一次'
+    ],
+    guide: '先抱住，再肯定。清楚地告诉 TA“我要的就是你”，比任何解释都管用。千万别让这份委屈过夜。'
+  }
+};
+
+/* ============ 状态与工具 ============ */
+const answers = new Array(QUESTIONS.length).fill(null);
+let cur = 0;
+
+const sumOpt = o => Object.values(o.s).reduce((a, b) => a + b, 0);
+const MAX_TOTAL = QUESTIONS.reduce((acc, q) => acc + Math.max.apply(null, q.opts.map(sumOpt)), 0);
+const MAX_DIM = {};
+DIM_KEYS.forEach(k => {
+  MAX_DIM[k] = QUESTIONS.reduce((acc, q) => {
+    const m = Math.max.apply(null, q.opts.map(o => o.s[k] || 0));
+    return acc + m;
+  }, 0);
+});
+
+const $ = id => document.getElementById(id);
+const screens = {
+  intro: $('screen-intro'),
+  quiz: $('screen-quiz'),
+  result: $('screen-result')
+};
+
+function show(name) {
+  Object.keys(screens).forEach(k => screens[k].classList.toggle('active', k === name));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 1900);
+}
+
+/* ============ 答题逻辑 ============ */
+function renderQuestion() {
+  const q = QUESTIONS[cur];
+  $('qIdx').textContent = cur + 1;
+  $('qBar').style.width = ((cur + 1) / QUESTIONS.length * 100) + '%';
+  $('qText').textContent = q.q;
+
+  const box = $('opts');
+  box.innerHTML = '';
+  q.opts.forEach((o, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'opt';
+    b.style.animationDelay = (i * 55) + 'ms';
+    if (answers[cur] === i) b.classList.add('sel');
+
+    const tag = document.createElement('i');
+    tag.className = 'tag';
+    tag.textContent = 'ABCD'[i];
+
+    const txt = document.createElement('span');
+    txt.className = 'otxt';
+    txt.textContent = o.t;
+
+    b.appendChild(tag);
+    b.appendChild(txt);
+    b.addEventListener('click', () => pick(i));
+    box.appendChild(b);
+  });
+
+  $('backBtn').style.visibility = cur === 0 ? 'hidden' : 'visible';
+}
+
+function pick(i) {
+  answers[cur] = i;
+  const btns = $('opts').querySelectorAll('.opt');
+  btns.forEach((b, k) => b.classList.toggle('sel', k === i));
+  setTimeout(() => {
+    if (cur < QUESTIONS.length - 1) {
+      cur++;
+      renderQuestion();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      showResult();
+    }
+  }, 240);
+}
+
+/* ============ 结果计算 ============ */
+function compute() {
+  const scores = {};
+  DIM_KEYS.forEach(k => scores[k] = 0);
+
+  answers.forEach((ai, qi) => {
+    if (ai === null) return;
+    const s = QUESTIONS[qi].opts[ai].s;
+    Object.keys(s).forEach(k => scores[k] += s[k]);
+  });
+
+  const total = DIM_KEYS.reduce((a, k) => a + scores[k], 0);
+  const raw = total / MAX_TOTAL;
+  const idx = Math.max(55, Math.min(99, Math.round(55 + raw * 44)));
+
+  const pct = {};
+  DIM_KEYS.forEach(k => pct[k] = MAX_DIM[k] ? Math.round(scores[k] / MAX_DIM[k] * 100) : 0);
+
+  const ranked = DIM_KEYS.slice().sort((a, b) => {
+    if (scores[b] !== scores[a]) return scores[b] - scores[a];
+    return pct[b] - pct[a];
+  });
+
+  return { scores, pct, idx, ranked, top: ranked[0], second: ranked[1] };
+}
+
+function idxTagOf(idx) {
+  if (idx >= 93) return { tag: '核弹级黑化 · 醋坛已成火山', desc: 'TA 的占有欲和在意程度都拉到了满格。爱得越深，翻脸越快，也说明你在 TA 心里的位置无人可替代。' };
+  if (idx >= 86) return { tag: '高能预警 · 高危醋坛', desc: 'TA 的情绪浓度相当高，一旦吃醋很容易上头。但反过来看，这也是全心全意在乎你的代价。' };
+  if (idx >= 79) return { tag: '中度醋坛 · 醋意稳定输出', desc: 'TA 会吃醋，但基本还在可控范围内。属于“会闹脾气、但很好哄”的优质区间。' };
+  return { tag: '微酸型 · 小醋怡情', desc: 'TA 的醋意清淡又克制，更多是撒娇式的表达。这种分寸感，其实相当难得。' };
+}
+
+function dangerStars(n) {
+  let s = '';
+  for (let i = 1; i <= 5; i++) s += i <= n ? '★' : '☆';
+  return s + '<small>危险指数 ' + n + ' / 5</small>';
+}
+
+function showResult() {
+  const r = compute();
+  const R = RESULTS[r.top];
+  const tag = idxTagOf(r.idx);
+
+  document.documentElement.style.setProperty('--rc', R.color);
+
+  $('resEmoji').textContent = R.emoji;
+  $('resName').textContent = R.name;
+  $('resCode').textContent = R.code;
+  $('resDanger').innerHTML = dangerStars(R.danger);
+  $('resDesc').textContent = R.desc;
+  $('resLine').textContent = R.line;
+  $('idxNum').textContent = r.idx;
+  $('idxTag').textContent = tag.tag;
+  $('idxDesc').textContent = tag.desc;
+
+  const ul = $('resTraits');
+  ul.innerHTML = '';
+  R.traits.forEach(t => {
+    const li = document.createElement('li');
+    li.textContent = t;
+    ul.appendChild(li);
+  });
+
+  $('resGuide').textContent = R.guide;
+
+  const dims = $('dims');
+  dims.innerHTML = '';
+  DIM_KEYS.forEach(k => {
+    const row = document.createElement('div');
+    row.className = 'dim';
+
+    const dn = document.createElement('div');
+    dn.className = 'dn';
+    dn.textContent = DIM_NAMES[k];
+
+    const dt = document.createElement('div');
+    dt.className = 'dt';
+    const fill = document.createElement('i');
+    fill.style.background = 'linear-gradient(90deg,' + DIM_COLORS[k] + 'aa,' + DIM_COLORS[k] + ')';
+    dt.appendChild(fill);
+
+    const dv = document.createElement('div');
+    dv.className = 'dv';
+    dv.textContent = r.pct[k] + '%';
+
+    row.appendChild(dn);
+    row.appendChild(dt);
+    row.appendChild(dv);
+    dims.appendChild(row);
+
+    setTimeout(() => { fill.style.width = Math.max(r.pct[k], 3) + '%'; }, 260);
+  });
+
+  const S = RESULTS[r.second];
+  $('subType').innerHTML = '在冰山之下，TA 还藏着 <b>' + S.name + '</b>（' + S.code + '）的一面。' +
+    '当主型格失效时，这层副型格就会冒头——' + S.desc.slice(0, 46) + '……';
+
+  show('result');
+
+  const ring = $('ringFg');
+  ring.style.strokeDashoffset = 326.7;
+  setTimeout(() => {
+    ring.style.strokeDashoffset = 326.7 * (1 - r.idx / 100);
+  }, 180);
+
+  window.__last = { R, S, idx: r.idx, tag: tag.tag };
+}
+
+/* ============ 交互绑定 ============ */
+$('startBtn').addEventListener('click', () => {
+  cur = 0;
+  answers.fill(null);
+  renderQuestion();
+  show('quiz');
+});
+
+$('backBtn').addEventListener('click', () => {
+  if (cur > 0) {
+    cur--;
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+
+$('againBtn').addEventListener('click', () => {
+  cur = 0;
+  answers.fill(null);
+  $('ringFg').style.strokeDashoffset = 326.7;
+  show('intro');
+});
+
+$('copyBtn').addEventListener('click', () => {
+  const d = window.__last;
+  if (!d) return;
+  const text = '【TA吃醋黑化测试】\n我的 TA 黑化类型：' + d.R.name + '（' + d.R.code + '）\n' +
+    '黑化指数：' + d.idx + '% · ' + d.tag + '\n' +
+    '经典台词：' + d.R.line + '\n' +
+    '拆弹指南：' + d.R.guide + '\n' +
+    '隐藏副类型：' + d.S.name;
+
+  const done = () => toast('结果已复制，快去分享吧 ✓');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => {
+      fallbackCopy(text, done);
+    });
+  } else {
+    fallbackCopy(text, done);
+  }
+});
+
+function fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); cb(); } catch (e) { toast('复制失败，请手动选择文本'); }
+  document.body.removeChild(ta);
+}
+
+/* 键盘支持：1-4 快速作答 */
+document.addEventListener('keydown', e => {
+  if (!screens.quiz.classList.contains('active')) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 4) pick(n - 1);
+});
+</script>
+</body>
+</html>
